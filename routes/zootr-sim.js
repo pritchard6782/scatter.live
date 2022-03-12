@@ -1,5 +1,7 @@
 var express = require('express');
 var request = require('request');
+var fs = require("fs");
+var path = require("path");
 var simHelper = require("../zootr-sim/helper.js");
 var router = express.Router();
 var playthroughModel = require('../models/SimPlaythroughModel.js');
@@ -175,9 +177,15 @@ async function start_multiworld(mw_doc) {
 }
 
 function parseLog(logfile, use_logic) {
-	if (typeof logfile == 'string') {
-		logfile = JSON.parse(logfile);
+	try {
+		if (typeof logfile == 'string') {
+			logfile = JSON.parse(logfile);
+		}
 	}
+	catch (e) {
+		throw e.message
+	}
+	// return (":version" in logfile)
 	if(!(":version" in logfile) || logfile[":version"] != "5.2.0 Release") {
 		throw "Incorrect version.";
 	}
@@ -300,6 +308,20 @@ function parseLog(logfile, use_logic) {
 
 router.get('/', function(req, res, next) {
 	res.render('zootr-sim', {meta: meta});
+});
+
+router.get('/getrandomgame', function (req, res, next) {
+	try {
+		const folder = 'D:\\oot\\5.2'
+		const games = fs.readdirSync(folder)
+		const randomGame = games[Math.floor(Math.random() * games.length)]
+		const data = fs.readFileSync(path.join(folder, randomGame)).toString()
+		// res.send(data);
+		res.send(parseLog(data, req.query.logic));
+	}
+	catch(error) {
+		res.status(500).send(error.message);
+	}
 });
 
 router.get('/getmwgames', function (req, res, next) {

@@ -1015,6 +1015,52 @@ $scope.hasBossKey = function(dungeon) {
 			}
 		});
 	};
+
+	$scope.selectRandomLog = function() {
+		var url = '/zootr-sim/getrandomgame?logic=true';
+		$http({
+			method: 'GET',
+			url: url
+		}).then(function successCallback(response) {
+			console.log(response)
+			$scope.generationError = null;
+			if (response.data.logic_rules != "glitchless" && $scope.use_logic) {
+				$scope.init_data = response.data;
+				$scope.logic_rules = response.data.logic_rules;
+				$scope.show_modal("logicWarningModal", true);
+			}
+			else {
+				$scope.initializeFromServer(response["data"]);
+			}
+			return;
+		}, function errorCallback(response) {
+			$scope.generating = false;
+			if (response.status == 400) {
+				if (response.data == "Entrance shuffle is not supported.") {
+					$scope.generationError = "Error! Entrance shuffle is not supported."
+				}
+				else {
+					$scope.generationError = "Error! Invalid settings string."
+				}
+			}
+			else if (response.status == 401) {
+				$scope.generationError = "Error! Invalid API key! This is not user error - please report this."
+			}
+			else if (response.status == 403) {
+				$scope.generationError = "Error! Multiworld is not supported by the generator. Upload a multiworld log instead."
+			}
+			else if (response.status == 408) {
+				$scope.generationError = "Error! Request timed out."
+			}
+			else if (response.status == 502) {
+				$scope.generationError = "Error! 502 Bad Gateway response from ootrandomizer.com.";
+			}
+			else {
+				$scope.generationError = "Unknown error. Please try again and report if this persists.";
+				console.error(response);
+			}
+		});
+	}
 	
 	$scope.fileSelected = function(event) {
 		reader = new FileReader();
